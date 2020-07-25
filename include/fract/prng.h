@@ -254,4 +254,36 @@ fract_perlin_fractal(
 	size_t layers
 );
 
+extern fract_lcg *sampling_lcg;
+extern Bitmap *sampling_bitmap;
+
+/**
+ * Function get a value in a sequence given a level of detail
+ */
+typedef uint32_t (*fract_igen)(int detail);
+
+/**
+ * Load bmp for sampling sequences
+ */
+void
+fract_load_bitmap(Bitmap *bmp);
+
+/**
+ * Load LCG for sampling
+ */
+void
+fract_load_lcg(fract_lcg *lcg);
+
+/**
+ * Just sequence from an LCG, detail is ignored
+ */
+uint32_t
+fract_sequence_random(int detail);
+
+/**
+ * Sequence in-order pixels from loaded bitmap
+ */
+uint32_t
+fract_sequence_linear(int detail);
+
 #endif

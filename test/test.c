@@ -2,6 +2,8 @@
 #include <stdint.h>
 #include <SLAV/slavio.h>
 #include "prng.h"
+#include "ifs.h"
+#include "music.h"
 
 void test_fractal_noise(fract_lcg *lcg){
 	fract_perlin perlin;
@@ -45,13 +47,50 @@ void test_perlin_swirl(fract_lcg *lcg){
 	fract_perlin_destroy(&colors);
 }
 
+void test_fractal_flame(fract_lcg *lcg){
+	uint8_t colors[] = {0xff, 0xff, 0xff,
+		0xff, 0, 0,
+		0, 0xff, 0,
+		0, 0, 0xff,
+		0xff, 0xff, 0,
+		0xff, 0, 0xff,
+		0, 0xff, 0xff};
+	fract_ifs ifs;
+	fract_ifs_init(&ifs, lcg, colors, 7);
+	
+	Bitmap *img = Bmp_empty(512, 512, 24, 0);
+	fract_ifs_flame(&ifs, lcg, -2, -2, 4, 4, img, 10000000L, 2, 3);
+	fract_ifs_destroy(&ifs);
+	
+	FILE *file = fopen("flame.bmp", "wb");
+	Bmp_save(img, file);
+	fclose(file);
+	Bmp_free(img);
+}
+
+void test_sequence(const char *fname){
+	FILE *file = fopen(fname, "rb");
+	Bitmap *img = Bmp_load(file);
+	fclose(file);
+	
+	fract_load_bitmap(img);
+	fract_track track = {
+		4, 4, 8, 1
+	};
+	fract_track_generate(&track, fract_sequence_linear);
+	
+	Bmp_free(img);
+}
+
 int main(int argc, char **argv){
 	
 	fract_lcg lcg;
 	fract_lcg_default(&lcg);
 	
-	test_fractal_noise(&lcg);
-	test_perlin_swirl(&lcg);
+	// test_fractal_noise(&lcg);
+	// test_perlin_swirl(&lcg);
+	// test_fractal_flame(&lcg);
+	test_sequence("flame.bmp");
 	
 	printf("Complete\n");
 	
