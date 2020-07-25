@@ -10,6 +10,7 @@
 #define FRACT_LCG_MASK 0xffffffffUL
 
 #include <stdio.h>
+#include <stdint.h>
 #include <SLAV/slavio.h>
 
 /**
@@ -201,7 +202,7 @@ fract_perlin_best(fract_perlin *perl, double x, double y, int *ox, int *oy);
  *
  * perl: Perlin datatype to generate noise
  * pal_indices: Perlin datatype for spatially hashing palette indices
- * palette: array of 24-bit RGB colors
+ * palette: array of 32-bit (A)RGB colors
  * noise_resolution: number of noise grid points in x and y directions
  * swirl_resolution: number of color grid points
  * swirl: strength of noise displacement
@@ -218,6 +219,39 @@ fract_perlin_swirl(
 	double swirl,
 	double offset_x, double offset_y,
 	Bitmap *img
+);
+
+/** TODO
+ * Generate a fractal noise image of multiple Perlin Noise layers
+ *
+ * perl: single Perlin datatype used for all layers
+ * colors: array of RGB values, ordered:
+ *     0.R, 0.G, 0.B, 1.R, 1.G, 1.B, ...
+ *     The sum of each R, G, or B, must not exceed 1.
+ * resolutions: array of noise resolution for each layer, in order
+ * offsets: x and y offsets for layer noises, ordered:
+ *     0.x, 0.y, 1.x, 1.y, ...
+ * flags: bitflags applied to each layer, of form:
+ *     7
+ *     6
+ *     5
+ *     4
+ *     3
+ *     2
+ *     1
+ *     0 - Normalized to [0, 1] if low, creased if high
+ * img: initialized image to store fractal noise
+ * layers: number of layers
+ */
+void
+fract_perlin_fractal(
+	fract_perlin *perl,
+	uint8_t *colors,
+	double *resolutions,
+	double *offsets,
+	uint8_t *flags,
+	Bitmap *img,
+	size_t layers
 );
 
 #endif

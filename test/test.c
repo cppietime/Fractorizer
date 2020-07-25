@@ -15,9 +15,14 @@ int main(int argc, char **argv){
 	fract_perlin_init(&colors, &lcg, 4);
 	uint32_t palette[] = {0xffffff, 0xff0000, 0x00ff00, 0x0000ff};
 	
+	uint8_t rgbs[] = {0xff, 0, 0, 0, 0xff, 0, 0, 0, 0xff};
+	double res[] = {5, 10, 20};
+	double offsets[] = {0, 0, 2, 0, 0, 2};
+	uint8_t flags[] = {0, 0, 0};
+	
 	Bitmap *img = Bmp_empty(256, 256, 24, 0);
 	img->R = img->G = img->B = 0;
-	fract_perlin_swirl(&perlin, &colors, palette, 15, 20, 4, 1, 2, img);
+	fract_perlin_fractal(&perlin, rgbs, res, offsets, flags, img, 3);
 	
 	FILE *file = fopen("image.bmp", "wb");
 	Bmp_save(img, file);

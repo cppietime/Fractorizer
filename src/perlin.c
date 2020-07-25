@@ -129,3 +129,36 @@ fract_perlin_swirl(
 		}
 	}
 }
+
+void
+fract_perlin_fractal(
+	fract_perlin *perl,
+	uint8_t *colors,
+	double *resolutions,
+	double *offsets,
+	uint8_t *flags,
+	Bitmap *img,
+	size_t layers)
+{
+	for(int y = 0; y < img->height; y++){
+		for(int x = 0; x < img->width; x++){
+			float r = 0, g = 0, b = 0;
+			for(int i = 0; i < layers; i++){
+				float dx = x * resolutions[i] / img->width;
+				float dy = y * resolutions[i] / img->height;
+				double sample = fract_perlin_at(
+					perl, dx + offsets[i * 2], dy + offsets[i * 2 + 1]);
+				uint8_t flag = flags[i];
+				sample = (flag & 1) ? fabs(sample) * M_SQRT2
+					: (sample + M_SQRT1_2) * M_SQRT1_2;
+				r += sample * colors[i * 3];
+				g += sample * colors[i * 3 + 1];
+				b += sample * colors[i * 3 + 2];
+			}
+			uint32_t color = (((int)(r) & 0xff) << 16) |
+				(((int)(g) & 0xff) << 8) |
+				((int)(b) & 0xff);
+			set_pixel(img, x, y, color);
+		}
+	}
+}

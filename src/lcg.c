@@ -7,13 +7,13 @@
 #include <math.h>
 #include "prng.h"
 
-typedef enum
+enum
 {
 	MULTIPLIER = 76541,
 	ADDEN = 12345,
 	MUL_SECS = 3,
 	MUL_NANOS = 5
-} Constants;
+};
 
 void
 fract_lcg_valid_init(
