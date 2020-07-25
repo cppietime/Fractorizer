@@ -1,5 +1,5 @@
 CC := gcc
-FLAGS := -Iinclude/fract
+FLAGS := -Iinclude/fract -ggdb -static-libgcc
 LIBS := -lslavio
 
 .PHONY:test

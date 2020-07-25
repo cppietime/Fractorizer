@@ -1,2 +1,3 @@
 *.bmp
 test/*.exe
+test/Dr*
