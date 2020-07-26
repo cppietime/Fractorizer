@@ -4,7 +4,7 @@ LIBS := -lslavio -ldatam
 
 .PHONY:test
 test:
-	$(CC) $(FLAGS) -o test/test test/test.c src/*.c $(LIBS)
+	$(CC) $(FLAGS) -o test/test test/test.c $(filter-out src/cli.c,$(wildcard src/*.c)) $(LIBS)
 
 .PHONY:cli
 cli:

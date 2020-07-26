@@ -111,10 +111,10 @@ int main(int argc, char **argv){
 	
 	test_fractal_noise(&lcg);
 	test_perlin_swirl(&lcg);
-	// test_fractal_flame(&lcg);
-	test_sequence("C:/users/sellar.king/documents/github/fractorizer/fractal.bmp",
-		"C:/users/sellar.king/documents/github/fractorizer/swirl.bmp",
-		"C:/users/sellar.king/documents/github/fractorizer/flame.bmp",
+	test_fractal_flame(&lcg);
+	test_sequence("fractal.bmp",
+		"swirl.bmp",
+		"flame.bmp",
 		&lcg);
 	
 	printf("Complete\n");
