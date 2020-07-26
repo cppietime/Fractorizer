@@ -4,6 +4,7 @@
 #include "prng.h"
 #include "ifs.h"
 #include "music.h"
+#include "utils.h"
 
 void test_fractal_noise(fract_lcg *lcg){
 	fract_perlin perlin;
@@ -12,7 +13,7 @@ void test_fractal_noise(fract_lcg *lcg){
 	uint8_t rgbs[] = {0xff, 0, 0, 0, 0xff, 0, 0, 0, 0xff};
 	double res[] = {5, 10, 20};
 	double offsets[] = {0, 0, 2, 0, 0, 2};
-	uint8_t flags[] = {0, 0, 0};
+	uint8_t flags[] = {1, 1, 1};
 	
 	Bitmap *img = Bmp_empty(256, 256, 24, 0);
 	fract_perlin_fractal(&perlin, rgbs, res, offsets, flags, img, 3);
@@ -29,15 +30,13 @@ void test_perlin_swirl(fract_lcg *lcg){
 	fract_perlin_init(&perlin, lcg, 256);
 	
 	fract_perlin colors;
-	fract_perlin_init(&colors, lcg, 4);
-	uint32_t palette[] = {0, 1, 2, 3};
+	fract_perlin_init(&colors, lcg, 8);
+	uint32_t palette[] = {0, 0xffffff, 0xff0000, 0x00ff00, 0x0000ff,
+		0xffff00, 0xff00ff, 0x00ffff};
 	
-	Bitmap *img = Bmp_empty(256, 256, 8, 4);
-	img->palette[0] = 0xffffff;
-	img->palette[1] = 0xff0000;
-	img->palette[2] = 0x00ffff;
-	img->palette[3] = 0xffff00;
-	fract_perlin_swirl(&perlin, &colors, palette, 10, 4, 10, 2, 10, img);
+	Bitmap *img = Bmp_empty(256, 256, 24, 0);
+	fract_perlin_swirl(&perlin, &colors, palette, 10, 10, 8, 2, 10, img);
+	fract_box_blur(img, 2, 2);
 	
 	FILE *file = fopen("swirl.bmp", "wb");
 	Bmp_save(img, file);
@@ -58,8 +57,8 @@ void test_fractal_flame(fract_lcg *lcg){
 	fract_ifs ifs;
 	fract_ifs_init(&ifs, lcg, colors, 7);
 	
-	Bitmap *img = Bmp_empty(512, 512, 24, 0);
-	fract_ifs_flame(&ifs, lcg, -2, -2, 4, 4, img, 10000000L, 2, 3);
+	Bitmap *img = Bmp_empty(256, 256, 24, 0);
+	fract_ifs_flame(&ifs, lcg, -.5, -.5, 1, 1, img, 10000000L, 1.5, 1);
 	fract_ifs_destroy(&ifs);
 	
 	FILE *file = fopen("flame.bmp", "wb");
@@ -68,29 +67,55 @@ void test_fractal_flame(fract_lcg *lcg){
 	Bmp_free(img);
 }
 
-void test_sequence(const char *fname){
-	FILE *file = fopen(fname, "rb");
+void img_to_sequence(const char *in, const char *out, fract_lcg *lcg){
+	FILE *file = fopen(in, "rb");
 	Bitmap *img = Bmp_load(file);
 	fclose(file);
 	
 	fract_load_bitmap(img);
 	fract_track track = {
-		4, 4, 8, 1
+		16, 7, 16, 3
 	};
-	fract_track_generate(&track, fract_sequence_linear);
+	fract_track_generate(&track, fract_sequence_hilbert);
+	for(int i = 0; i < track.num_tracks; i++)
+		track.programs[i] = fract_lcg_int(lcg, 112);
 	
+	FILE *midi = fopen(out, "wb");
+	char scale[] = {40, 2, 2, 1, 2, 2, 2, 1, 0, 80};
+	fract_write_midi_file(midi, &track, 8.0, 2, scale, 0, -1);
+	fclose(midi);
+	
+	fract_track_destroy(&track);
 	Bmp_free(img);
+}
+
+void test_sequence(
+	const char *fractal, const char *swirl, const char *flame, fract_lcg *lcg){
+	
+	img_to_sequence(fractal, "fractal.mid", lcg);
+	img_to_sequence(swirl, "swirl.mid", lcg);
+	img_to_sequence(flame, "flame.mid", lcg);
+}
+
+void test_hsv(uint32_t c){
+	float r, g, b;
+	RGB2HSV(c, &r, &g, &b);
+	printf("%06x -> %f %f %f\n", c, r, g, b);
 }
 
 int main(int argc, char **argv){
 	
 	fract_lcg lcg;
 	fract_lcg_default(&lcg);
+	fract_load_lcg(&lcg);
 	
-	// test_fractal_noise(&lcg);
-	// test_perlin_swirl(&lcg);
+	test_fractal_noise(&lcg);
+	test_perlin_swirl(&lcg);
 	// test_fractal_flame(&lcg);
-	test_sequence("flame.bmp");
+	test_sequence("C:/users/sellar.king/documents/github/fractorizer/fractal.bmp",
+		"C:/users/sellar.king/documents/github/fractorizer/swirl.bmp",
+		"C:/users/sellar.king/documents/github/fractorizer/flame.bmp",
+		&lcg);
 	
 	printf("Complete\n");
 	

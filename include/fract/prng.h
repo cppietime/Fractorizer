@@ -286,4 +286,10 @@ fract_sequence_random(int detail);
 uint32_t
 fract_sequence_linear(int detail);
 
+/**
+ * Sequence in Hilbert Curve order
+ */
+uint32_t
+fract_sequence_hilbert(int detail);
+
 #endif

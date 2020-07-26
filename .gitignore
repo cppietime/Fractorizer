@@ -1,3 +1,6 @@
 *.bmp
 test/*.exe
 test/Dr*
+*.exe
+*.mid
+*.trk

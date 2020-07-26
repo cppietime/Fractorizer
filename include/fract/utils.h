@@ -8,6 +8,7 @@
 #define _H_FRACT_UTILS
 
 #include <stdint.h>
+#include <SLAV/slavio.h>
 
 /*
 x^3 * (1 - x) + (1 - (1 - x)^3) * x
@@ -29,5 +30,11 @@ a.x * b.x + a.y * b.y
  */
 int
 fract_nlz(uint64_t x);
+
+/**
+ * Apply a box blur to img
+ */
+void
+fract_box_blur(Bitmap *img, int x, int y);
 
 #endif
