@@ -98,6 +98,15 @@ VARIATION_DEF(fract_var_persp);
 VARIATION_DEF(fract_var_noise);
 VARIATION_DEF(fract_var_juliaN);
 VARIATION_DEF(fract_var_juliascope);
+VARIATION_DEF(fract_var_blur);
+VARIATION_DEF(fract_var_gaussian);
+VARIATION_DEF(fract_var_pie);
+VARIATION_DEF(fract_var_polygon);
+VARIATION_DEF(fract_var_curl);
+VARIATION_DEF(fract_var_rectangles);
+VARIATION_DEF(fract_var_tan);
+VARIATION_DEF(fract_var_square);
+VARIATION_DEF(fract_var_cross);
 
 /**
  * Datatype for system of iterated functions (variations)

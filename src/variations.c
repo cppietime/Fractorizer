@@ -42,6 +42,15 @@ fract_variation fract_variations[] = {
 	fract_var_noise,
 	fract_var_juliaN,
 	fract_var_juliascope,
+	fract_var_blur,
+	fract_var_gaussian,
+	fract_var_pie,
+	fract_var_polygon,
+	fract_var_curl,
+	fract_var_rectangles,
+	fract_var_tan,
+	fract_var_square,
+	fract_var_cross,
 	NULL
 };
 
@@ -523,8 +532,136 @@ fract_var_juliascope(
 	double theta = atan2(y, x);
 	double r = hypot(x, y);
 	double p = abs(*parameters * fract_lcg_uniform(lcg));
-	double t = (theta * (1 - 2 * fract_lcg_int(lcg, 2)) + 2 * M_PI * p) / *parameters;
+	double t = (theta * (1 - 2 * fract_lcg_int(lcg, 2)) + 2 * M_PI * p)
+		/ *parameters;
 	double factor = pow(r, parameters[1] / parameters[0]);
 	*ox = factor * cos(t);
 	*oy = factor * sin(t);
+}
+
+void
+fract_var_blur(
+	double x, double y,
+	fract_affine affine,
+	fract_lcg *lcg,
+	double *parameters,
+	double *ox, double *oy)
+{
+	double p = fract_lcg_uniform(lcg);
+	double t = 2 * M_PI * fract_lcg_uniform(lcg);
+	*ox = p * cos(t);
+	*oy = p * sin(t);
+}
+
+void
+fract_var_gaussian(
+	double x, double y,
+	fract_affine affine,
+	fract_lcg *lcg,
+	double *parameters,
+	double *ox, double *oy)
+{
+	double p = fract_lcg_gaussian(lcg);
+	double t = fract_lcg_uniform(lcg) * 2 * M_PI;
+	*ox = p * cos(t);
+	*oy = p * sin(t);
+}
+
+void
+fract_var_pie(
+	double x, double y,
+	fract_affine affine,
+	fract_lcg *lcg,
+	double *parameters,
+	double *ox, double *oy)
+{
+	double t = (int)(parameters[0] * fract_lcg_uniform(lcg) + 0.5);
+	double s = parameters[1] + 2 * M_PI / parameters[0] *
+		(t + fract_lcg_uniform(lcg) * parameters[2]);
+	double p = fract_lcg_uniform(lcg);
+	*ox = p * cos(s);
+	*oy = p * sin(t);
+}
+
+void
+fract_var_polygon(
+	double x, double y,
+	fract_affine affine,
+	fract_lcg *lcg,
+	double *parameters,
+	double *ox, double *oy)
+{
+	double theta = atan2(y, x);
+	double r = hypot(x, y);
+	double p = 2 * M_PI / parameters[1];
+	double t = theta - p * floor(theta / p);
+	double s = (t > p/2) ? t : t - p;
+	double k = (parameters[2] * (1 / cos(s) - 1) + parameters[3])
+		/ pow(r, parameters[0]);
+	*ox = k * x;
+	*oy = k * y;
+}
+
+void
+fract_var_curl(
+	double x, double y,
+	fract_affine affine,
+	fract_lcg *lcg,
+	double *parameters,
+	double *ox, double *oy)
+{
+	double t = 1 + parameters[0] * x + parameters[1] * (x * x - y * y);
+	double s = parameters[0] * y + 2 * parameters[1] * x * y;
+	double factor = 1 / (t * t + s * s);
+	*ox = factor * (x * t + y * s);
+	*oy = factor * (y * t - x * s);
+}
+
+void
+fract_var_rectangles(
+	double x, double y,
+	fract_affine affine,
+	fract_lcg *lcg,
+	double *parameters,
+	double *ox, double *oy)
+{
+	*ox = parameters[0] * (2 * floor(x / parameters[0]) + 1) - x;
+	*oy = parameters[1] * (2 * floor(y / parameters[1]) + 1) - y;
+}
+
+void
+fract_var_tan(
+	double x, double y,
+	fract_affine affine,
+	fract_lcg *lcg,
+	double *parameters,
+	double *ox, double *oy)
+{
+	*ox = sin(x) / cos(y);
+	*oy = tan(y);
+}
+
+void
+fract_var_square(
+	double x, double y,
+	fract_affine affine,
+	fract_lcg *lcg,
+	double *parameters,
+	double *ox, double *oy)
+{
+	*ox = fract_lcg_uniform(lcg) - 0.5;
+	*oy = fract_lcg_uniform(lcg) - 0.5;
+}
+
+void
+fract_var_cross(
+	double x, double y,
+	fract_affine affine,
+	fract_lcg *lcg,
+	double *parameters,
+	double *ox, double *oy)
+{
+	double factor = fabs(1 / (x * x + y * y));
+	*ox = factor * x;
+	*oy = factor * y;
 }
