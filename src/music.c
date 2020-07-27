@@ -102,7 +102,8 @@ fract_create_midi_track(
 	double tempo,
 	int ticks_per_quarter_note,
 	char *scale,
-	int percussion)
+	int percussion,
+	size_t offset)
 {
 	datam_darr *ret = datam_darr_new(1);
 	if(tempo != 0){
@@ -124,28 +125,31 @@ fract_create_midi_track(
 		datam_darr_pushlit(ret, 8);
 	}
 	if(track != NULL){
-		for(size_t i = 0; i < track->num_tracks; i++){
+		for(size_t i = offset; i < track->num_tracks && i < 16; i++){
 			datam_darr_pushlit(ret, 0);
-			datam_darr_pushlit(ret, 0xc0 | i);
+			datam_darr_pushlit(ret, 0xc0 | (i&15));
 			datam_darr_pushlit(ret, track->programs[i]);
 		}
 		size_t scale_size;
 		for(scale_size = 1; scale[scale_size] != 0; scale_size++);
 		int max = scale[scale_size + 1];
-		char *playing = calloc(track->num_tracks * 128, 1);
-		char *newplay = calloc(track->num_tracks * 128, 1);
+		size_t tracks = track->num_tracks - offset;
+		if(tracks > 16)
+			tracks = 16;
+		char *playing = calloc(tracks * 128, 1);
+		char *newplay = calloc(tracks * 128, 1);
 		int delta = 0;
 		for(size_t i = 0; i < track->num_measures; i++){
 			size_t measure = track->measures[i];
 			for(size_t j = 0; j < track->notes_per_measure; j++){
-				memset(newplay, 0, track->num_tracks * 128);
-				for(size_t k = 0; k < track->num_tracks; k++){
-					size_t index = k * track->unique_measures
+				memset(newplay, 0, tracks * 128);
+				for(size_t k = 0; k < tracks; k++){
+					size_t index = (k + offset) * track->unique_measures
 						* track->notes_per_measure +
 						measure * track->notes_per_measure + j;
 					int note = track->notes[index];
 					if(note > 0){
-						if(percussion >= 0 && k == percussion){
+						if(percussion >= 0 && (k + offset) == percussion){
 							int drum;
 							for(drum = 0; note > 0; note--){
 								drum++;
@@ -160,11 +164,12 @@ fract_create_midi_track(
 								+ k * 128] = 1;
 					}
 				}
-				for(size_t k = 0; k < track->num_tracks; k++){
+				for(size_t k = 0; k < tracks; k++){
 					int channel = k;
-					if(channel == percussion && percussion >= 0){
+					if(channel + offset == percussion && percussion >= 0){
 						channel = DRUM_CHANNEL;
-					}else{
+					}else if(((channel + offset) & 15) == (percussion & 15)
+							&& percussion >= 0){
 						if(channel > percussion)
 							channel--;
 						if(channel >= DRUM_CHANNEL)
@@ -246,12 +251,41 @@ fract_write_midi_file(
 	char *scale, int format,
 	int percussion)
 {
-	fract_write_midi_header(file, format, 1,
+	fflush(stdout);
+	if((track->num_tracks > 16 && format == 0) || format == 1)
+		format = 2;
+	fract_write_midi_header(file, format,
+		(track->num_tracks + 15) >> 4 + (format & 1),
 		ticks_per_quarter_note);
-	datam_darr *msgs = fract_create_midi_track(track, tempo,
-		ticks_per_quarter_note, scale, percussion);
-	fract_write_midi_track(file, msgs);
-	datam_darr_delete(msgs);
+	datam_darr *msgs;
+	switch(format){
+		case 0:
+			msgs = fract_create_midi_track(track, tempo,
+				ticks_per_quarter_note, scale, percussion, 0);
+			fract_write_midi_track(file, msgs);
+			datam_darr_delete(msgs);
+			break;
+		case 1:
+			msgs = fract_create_midi_track(NULL, tempo,
+				ticks_per_quarter_note, scale, percussion, 0);
+			fract_write_midi_track(file, msgs);
+			datam_darr_delete(msgs);
+			for(size_t offset = 0; offset < track->num_tracks; offset += 16){
+				msgs = fract_create_midi_track(track, 0.0,
+					ticks_per_quarter_note, scale, percussion, offset);
+				fract_write_midi_track(file, msgs);
+				datam_darr_delete(msgs);
+			}
+			break;
+		case 2:
+			for(size_t offset = 0; offset < track->num_tracks; offset += 16){
+				datam_darr *msgs = fract_create_midi_track(track, 0.0,
+					ticks_per_quarter_note, scale, percussion, offset);
+				fract_write_midi_track(file, msgs);
+				datam_darr_delete(msgs);
+			}
+			break;
+	}
 }
 
 void
@@ -282,5 +316,5 @@ fract_load_track(FILE *file, fract_track *track){
 	track->notes = malloc(num_notes);
 	fread(track->notes, 1, track->unique_measures * track->num_tracks
 			* track->notes_per_measure, file);
-	track->programs = malloc(sizeof(int) * track->num_measures);
+	track->programs = malloc(sizeof(int) * track->num_tracks);
 }

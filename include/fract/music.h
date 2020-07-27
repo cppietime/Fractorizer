@@ -76,6 +76,7 @@ fract_write_midi_header(
  * tempo: 0 to ignore, otherwise, note ticks per second
  * scale: array of form:
  *     min_note, intervals..., 0, max_note
+ * offset: for when there are too many tracks for one MIDI track
  */
 datam_darr*
 fract_create_midi_track(
@@ -83,7 +84,8 @@ fract_create_midi_track(
 	double tempo,
 	int ticks_per_quarter_note,
 	char *scale,
-	int percussion
+	int percussion,
+	size_t offset;
 );
 
 /**

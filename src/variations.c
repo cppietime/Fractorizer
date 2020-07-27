@@ -33,6 +33,15 @@ fract_variation fract_variations[] = {
 	fract_var_fan,
 	fract_var_blob,
 	fract_var_pdj,
+	fract_var_fan2,
+	fract_var_rings2,
+	fract_var_eyefish,
+	fract_var_bubble,
+	fract_var_cylinder,
+	fract_var_persp,
+	fract_var_noise,
+	fract_var_juliaN,
+	fract_var_juliascope,
 	NULL
 };
 
@@ -381,4 +390,141 @@ fract_var_pdj(
 {
 	*ox = sin(parameters[0] * x) - cos(parameters[1] * y);
 	*oy = sin(parameters[2] * x) - cos(parameters[3] * y);
+}
+
+void
+fract_var_fan2(
+	double x, double y,
+	fract_affine affine,
+	fract_lcg *lcg,
+	double *parameters,
+	double *ox, double *oy)
+{
+	double theta = atan2(x, y);
+	double r = hypot(x, y);
+	double p0 = parameters[0] * parameters[0] * M_PI;
+	double p1 = parameters[1];
+	double t = theta + p1 - p0 * (int)(2 * theta * p1 / p0);
+	double term = (t <= p0/2) ? p0/2 : -p0/2;
+	*ox = r * sin(theta + term);
+	*oy = r * cos(theta + term);
+}
+
+void
+fract_var_rings2(
+	double x, double y,
+	fract_affine affine,
+	fract_lcg *lcg,
+	double *parameters,
+	double *ox, double *oy)
+{
+	double theta = atan2(x, y);
+	double r = hypot(x, y);
+	double p = *parameters * *parameters;
+	double t = r - 2 * p * (int)((r + p) / (2 * p)) + r * (1 - p);
+	*ox = t * sin(theta);
+	*oy = t * cos(theta);
+}
+
+void
+fract_var_eyefish(
+	double x, double y,
+	fract_affine affine,
+	fract_lcg *lcg,
+	double *parameters,
+	double *ox, double *oy)
+{
+	double r = hypot(x, y);
+	double factor = 2 / (r + 1);
+	*ox = x * factor;
+	*oy = y * factor;
+}
+
+void
+fract_var_bubble(
+	double x, double y,
+	fract_affine affine,
+	fract_lcg *lcg,
+	double *parameters,
+	double *ox, double *oy)
+{
+	double r = hypot(x, y);
+	double p = 4 / (r * r + 4);
+	*ox = p * x;
+	*oy = p * y;
+}
+
+void
+fract_var_cylinder(
+	double x, double y,
+	fract_affine affine,
+	fract_lcg *lcg,
+	double *parameters,
+	double *ox, double *oy)
+{
+	*ox = sin(x);
+	*oy = y;
+}
+
+void
+fract_var_persp(
+	double x, double y,
+	fract_affine affine,
+	fract_lcg *lcg,
+	double *parameters,
+	double *ox, double *oy)
+{
+	double theta = atan2(x, y);
+	double r = hypot(x, y);
+	double p = parameters[1] / (parameters[1] - y * sin(parameters[0]));
+	*ox = x;
+	*oy = y * cos(p);
+}
+
+void
+fract_var_noise(
+	double x, double y,
+	fract_affine affine,
+	fract_lcg *lcg,
+	double *parameters,
+	double *ox, double *oy)
+{
+	double a = fract_lcg_uniform(lcg);
+	double b = fract_lcg_uniform(lcg);
+	*ox = a * x * cos(2 * M_PI * b);
+	*oy = a * y * sin(2 * M_PI * b);
+}
+
+void
+fract_var_juliaN(
+	double x, double y,
+	fract_affine affine,
+	fract_lcg *lcg,
+	double *parameters,
+	double *ox, double *oy)
+{
+	double theta = atan2(y, x);
+	double r = hypot(x, y);
+	double p = abs(*parameters * fract_lcg_uniform(lcg));
+	double t = (theta + 2 * M_PI * p) / *parameters;
+	double factor = pow(r, parameters[1] / parameters[0]);
+	*ox = factor * cos(t);
+	*oy = factor * sin(t);
+}
+
+void
+fract_var_juliascope(
+	double x, double y,
+	fract_affine affine,
+	fract_lcg *lcg,
+	double *parameters,
+	double *ox, double *oy)
+{
+	double theta = atan2(y, x);
+	double r = hypot(x, y);
+	double p = abs(*parameters * fract_lcg_uniform(lcg));
+	double t = (theta * (1 - 2 * fract_lcg_int(lcg, 2)) + 2 * M_PI * p) / *parameters;
+	double factor = pow(r, parameters[1] / parameters[0]);
+	*ox = factor * cos(t);
+	*oy = factor * sin(t);
 }

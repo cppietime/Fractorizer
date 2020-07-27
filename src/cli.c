@@ -14,6 +14,32 @@
 #include "cli.h"
 #include "music.h"
 
+Bitmap*
+resize_and_warn(Bitmap *src, char stretch)
+{
+	int width = src->width, height = src->height;
+	int comb = width | height;
+	if((comb & (comb - 1)) == 0)
+		return src;
+	fprintf(stderr,
+		"Warning: Supplied image is not a square with power-of-2 side-length\n"
+	);
+	int dim = width;
+	if((stretch && (height > dim)) || (!stretch && (height < dim)))
+		dim = height;
+	if(stretch){
+		int bits = 64 - fract_nlz(dim - 1);
+		dim = 1 << (bits);
+	}else{
+		int bits = 64 - fract_nlz(dim);
+		dim = 1 << (bits - 1);
+	}
+	fprintf(stderr, "Resizing to (%d x %d)\n", dim, dim);
+	Bitmap *ret = Bmp_resize(src, dim, dim);
+	Bmp_free(src);
+	return ret;
+}
+
 void
 parse_bytes(char *toks, uint8_t *dst, char delim)
 {
@@ -121,6 +147,7 @@ fract_save_noise(int argc, char **argv)
 		fract_perlin perlin;
 		fract_perlin_init(&perlin, &lcg, 256);
 		Bitmap *img = Bmp_empty(size, size, 24, 0);
+		img = resize_and_warn(img, 0);
 		fract_perlin_fractal(&perlin, colors, resolutions, offsets, flags,
 			img, layers);
 		Bmp_save(img, file);
@@ -206,6 +233,7 @@ fract_save_swirl(int argc, char **argv)
 			palette[i] = color;
 		}
 		Bitmap *img = Bmp_empty(side, side, 24, 0);
+		img = resize_and_warn(img, 0);
 		fract_perlin_swirl(&perlin, &pal, palette, noise_res, swirl_res, swirl,
 			off_x, off_y, img);
 		free(palette);
@@ -242,6 +270,8 @@ fract_save_flame(int argc, char **argv)
 			case 'l':
 				num_colors = strtol(optarg, NULL, 10);
 				colors = malloc(3 * num_colors);
+				for(size_t i = 0; i < 3 * num_colors; i++)
+					colors[i] = fract_lcg_int(&lcg, 256);
 				break;
 			case 'c':
 				if(colors == NULL)
@@ -281,10 +311,13 @@ fract_save_flame(int argc, char **argv)
 	FILE *file = filename ? fopen(filename, "wb") : stdout;
 	if(file == NULL){
 		fprintf(stderr, "Could not open file %s\n", filename);
+	}else if(colors == NULL){
+		fprintf(stderr, "You must call -l\n");
 	}else{
 		fract_ifs ifs;
 		fract_ifs_init(&ifs, &lcg, colors, num_colors);
 		Bitmap *img = Bmp_empty(side, side, 24, 0);
+		img = resize_and_warn(img, 0);
 		fract_ifs_flame(&ifs, &lcg, x0, y0, width, height, img, iters, gamma,
 			sample);
 		fract_ifs_destroy(&ifs);
@@ -320,6 +353,7 @@ fract_save_track_record(int argc, char **argv)
 					fprintf(stderr, "Could not open file %s\n", optarg);
 				}else{
 					img = Bmp_load(file);
+					img = resize_and_warn(img, 0);
 					fclose(file);
 					fract_load_bitmap(img);
 				}
@@ -388,7 +422,7 @@ fract_save_midi(int argc, char **argv)
 	if(ofile && ifile){
 		fract_load_track(ifile, &track);
 		for(size_t i = 0; i < track.num_tracks; i++)
-			track.programs[i] = programs[i];
+			track.programs[i] = programs[i & 15];
 		fract_write_midi_file(ofile, &track, tempo, 2, scale, 0, percussion);
 		fract_track_destroy(&track);
 	}

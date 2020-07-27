@@ -89,6 +89,15 @@ VARIATION_DEF(fract_var_rings);
 VARIATION_DEF(fract_var_fan);
 VARIATION_DEF(fract_var_blob);
 VARIATION_DEF(fract_var_pdj);
+VARIATION_DEF(fract_var_fan2);
+VARIATION_DEF(fract_var_rings2);
+VARIATION_DEF(fract_var_eyefish);
+VARIATION_DEF(fract_var_bubble);
+VARIATION_DEF(fract_var_cylinder);
+VARIATION_DEF(fract_var_persp);
+VARIATION_DEF(fract_var_noise);
+VARIATION_DEF(fract_var_juliaN);
+VARIATION_DEF(fract_var_juliascope);
 
 /**
  * Datatype for system of iterated functions (variations)
