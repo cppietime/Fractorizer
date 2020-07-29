@@ -10,6 +10,7 @@
 #include <SLAV/slavio.h>
 #include "prng.h"
 #include "utils.h"
+#include "constants.h"
 
 void
 fract_perlin_init(fract_perlin *perl, fract_lcg *lcg, size_t size)

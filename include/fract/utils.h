@@ -37,4 +37,10 @@ fract_nlz(uint64_t x);
 void
 fract_box_blur(Bitmap *img, int x, int y);
 
+/**
+ * Return (2 + S)/(2 - S); S = a + bi
+ */
+void
+fract_blt(float a, float b, float *oa, float *ob);
+
 #endif

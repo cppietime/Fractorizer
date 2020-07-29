@@ -12,6 +12,7 @@
 #include "prng.h"
 #include "music.h"
 #include "utils.h"
+#include "constants.h"
 
 enum {
 	MUL_H = 5,

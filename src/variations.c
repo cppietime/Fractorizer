@@ -6,6 +6,7 @@
 #include <math.h>
 #include "prng.h"
 #include "ifs.h"
+#include "constants.h"
 
 fract_variation fract_variations[] = {
 	fract_var_linear,

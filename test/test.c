@@ -1,10 +1,15 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <time.h>
 #include <SLAV/slavio.h>
 #include "prng.h"
 #include "ifs.h"
 #include "music.h"
 #include "utils.h"
+#include "wav.h"
+#include "signal.h"
+#include "constants.h"
 
 void test_fractal_noise(fract_lcg *lcg){
 	fract_perlin perlin;
@@ -73,28 +78,107 @@ void img_to_sequence(const char *in, const char *out, fract_lcg *lcg){
 	fclose(file);
 	
 	fract_load_bitmap(img);
+	int m = 16;
+	int u = 7;
+	int n = 16;
+	int t = 1;
+	double tempo = 16.0;
 	fract_track track = {
-		16, 7, 16, 3
+		m, u, n, t
 	};
+	long rate = 44100;
 	fract_track_generate(&track, fract_sequence_hilbert);
 	for(int i = 0; i < track.num_tracks; i++)
-		track.programs[i] = fract_lcg_int(lcg, 112);
+		track.programs[i] = 0;
 	
 	FILE *midi = fopen(out, "wb");
 	char scale[] = {40, 2, 2, 1, 2, 2, 2, 1, 0, 80};
-	fract_write_midi_file(midi, &track, 8.0, 2, scale, 0, -1);
+	fract_oscillator synth;
+	fract_oscillator_init(&synth);
+	float cutoffs[] = {1000 * 2 * M_PI / rate, 50 * 2 * M_PI / rate};
+	fract_iir_butterworth(synth.filters, 4, cutoffs, 1, IIR_POLE);
+	fract_iir_butterworth(synth.filters, 2, cutoffs + 1, 1, IIR_ZERO);
+	float g = .5;
+	fract_iir_delayline(synth.filters, rate * .1, rate * .2, &g, 1, IIR_POLE,
+		&g, 1);
+	synth.generator = wavgen_hsin;
+	synth.pm_strength = 1;
+	synth.pm_ratio = 4;
+	synth.filter_arg = M_PI / rate;
+	fflush(stdout);
+	int32_t *samples = calloc(m * n * rate / tempo, sizeof(int32_t));
+	fflush(stdout);
+	fract_signal_from_track(&track, &synth, tempo, scale, rate, samples,
+		m * n * rate / tempo);
+	fract_oscillator_destroy(&synth);
+	fflush(stdout);
+	fract_signal_normalize(samples, m * n * rate / tempo, 32767, 0);
+	fract_wavhead head = {rate, 1, 2};
+	fract_write_wav(midi, &head, samples, m * n * rate / tempo);
+	free(samples);
+	// fract_write_midi_file(midi, &track, 8.0, 2, scale, 0, -1);
 	fclose(midi);
 	
 	fract_track_destroy(&track);
 	Bmp_free(img);
 }
 
+void test_instr(const char *in, const char *out, fract_lcg *lcg,
+	fract_oscillator *instr){
+	FILE *file = fopen(in, "rb");
+	Bitmap *img = Bmp_load(file);
+	fclose(file);
+	
+	fract_load_bitmap(img);
+	int m = 16;
+	int u = 7;
+	int n = 16;
+	int t = 1;
+	double tempo = 16.0;
+	fract_track track = {
+		m, u, n, t
+	};
+	long rate = 44100;
+	fract_track_generate(&track, fract_sequence_hilbert);
+	for(int i = 0; i < track.num_tracks; i++)
+		track.programs[i] = 0;
+	
+	char scale[] = {40, 2, 2, 1, 2, 2, 2, 1, 0, 50};
+	FILE *wav = fopen(out, "wb");
+	int32_t *samples = calloc(m * n * rate / tempo, sizeof(int32_t));
+	fract_signal_from_track(&track, instr, tempo, scale, rate, samples,
+		m * n * rate / tempo);
+	fract_signal_normalize(samples, n * m * rate / tempo, 32767, 1);
+	fract_wavhead head = {rate, 1, 2};
+	fract_write_wav(wav, &head, samples, m * n * rate / tempo);
+	fclose(wav);
+	fract_track_destroy(&track);
+	Bmp_free(img);
+}
+
+void test_instr_file(const char *img, const char *instrs, fract_lcg *lcg){
+	FILE *src = fopen(instrs, "r");
+	fseek(src, 0, SEEK_END);
+	long end = ftell(src);
+	fseek(src, 0, SEEK_SET);
+	size_t index = 0;
+	static char name[64];
+	while(ftell(src) < end){
+		fract_oscillator instr = fract_oscillator_from_file(src);
+		sprintf(name, "test_i%d.wav", index);
+		test_instr(img, name, lcg, &instr);
+		fract_oscillator_destroy(&instr);
+		index++;
+	}
+	fclose(src);
+}
+
 void test_sequence(
 	const char *fractal, const char *swirl, const char *flame, fract_lcg *lcg){
 	
-	img_to_sequence(fractal, "fractal.mid", lcg);
-	img_to_sequence(swirl, "swirl.mid", lcg);
-	img_to_sequence(flame, "flame.mid", lcg);
+	// img_to_sequence(fractal, "fractal.wav", lcg);
+	img_to_sequence(swirl, "swirl.wav", lcg);
+	// img_to_sequence(flame, "flame.wav", lcg);
 }
 
 void test_hsv(uint32_t c){
@@ -105,17 +189,24 @@ void test_hsv(uint32_t c){
 
 int main(int argc, char **argv){
 	
+	struct timespec now;
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	srand(now.tv_nsec);
+	
 	fract_lcg lcg;
 	fract_lcg_default(&lcg);
 	fract_load_lcg(&lcg);
 	
-	test_fractal_noise(&lcg);
-	test_perlin_swirl(&lcg);
-	test_fractal_flame(&lcg);
-	test_sequence("fractal.bmp",
-		"swirl.bmp",
-		"flame.bmp",
-		&lcg);
+	// test_fractal_noise(&lcg);
+	// test_perlin_swirl(&lcg);
+	// test_fractal_flame(&lcg);
+	// test_sequence("fractal.bmp",
+		// "swirl.bmp",
+		// "flame.bmp",
+		// &lcg);
+	
+	test_instr_file("C:/users/sellar.king/documents/github/fractorizer/swirl.bmp",
+		"C:/users/sellar.king/documents/github/fractorizer/instr.txt", &lcg);
 	
 	printf("Complete\n");
 	

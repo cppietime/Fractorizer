@@ -6,6 +6,7 @@
 #include <time.h>
 #include <math.h>
 #include "prng.h"
+#include "constants.h"
 
 enum
 {

@@ -59,3 +59,13 @@ fract_box_blur(Bitmap *img, int w, int h)
 	}
 	free(buffer);
 }
+
+void
+fract_blt(float a, float b, float *oa, float *ob)
+{
+	float a2 = a * a;
+	float b2 = b * b;
+	float denom = 1 / (4 - 4 * a + a2 + b2);
+	*oa = (4 - a2 - b2) * denom;
+	*ob = 4 * b * denom;
+}
