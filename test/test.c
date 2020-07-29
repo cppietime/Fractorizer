@@ -133,8 +133,8 @@ void test_instr(const char *in, const char *out, fract_lcg *lcg,
 	int m = 16;
 	int u = 7;
 	int n = 16;
-	int t = 1;
-	double tempo = 16.0;
+	int t = 3;
+	double tempo = 8.0;
 	fract_track track = {
 		m, u, n, t
 	};
@@ -143,7 +143,7 @@ void test_instr(const char *in, const char *out, fract_lcg *lcg,
 	for(int i = 0; i < track.num_tracks; i++)
 		track.programs[i] = 0;
 	
-	char scale[] = {40, 2, 2, 1, 2, 2, 2, 1, 0, 50};
+	char scale[] = {40, 2, 2, 1, 2, 2, 2, 1, 0, 64};
 	FILE *wav = fopen(out, "wb");
 	int32_t *samples = calloc(m * n * rate / tempo, sizeof(int32_t));
 	fract_signal_from_track(&track, instr, tempo, scale, rate, samples,

@@ -13,6 +13,8 @@
 #include "utils.h"
 #include "cli.h"
 #include "music.h"
+#include "signal.h"
+#include "wav.h"
 
 Bitmap*
 resize_and_warn(Bitmap *src, char stretch)
@@ -322,6 +324,7 @@ fract_save_flame(int argc, char **argv)
 			sample);
 		fract_ifs_destroy(&ifs);
 		Bmp_save(img, file);
+		if(file != stdout)fclose(file);
 		Bmp_free(img);
 	}
 	if(colors)free(colors);
@@ -377,7 +380,7 @@ fract_save_track_record(int argc, char **argv)
 	}else{
 		fract_track_generate(&track, generator);
 		fract_save_track(file, &track);
-		fclose(file);
+		if(file != stdout)fclose(file);
 		fract_track_destroy(&track);
 	}
 	if(outname)free(outname);
@@ -426,10 +429,90 @@ fract_save_midi(int argc, char **argv)
 		fract_write_midi_file(ofile, &track, tempo, 2, scale, 0, percussion);
 		fract_track_destroy(&track);
 	}
-	if(ifile)fclose(ifile);
-	if(ofile)fclose(ofile);
+	if(ifile && ifile != stdin)fclose(ifile);
+	if(ofile && ofile != stdout)fclose(ofile);
 	if(iname)free(iname);
 	if(oname)free(oname);
+}
+
+void
+fract_save_wav(int argc, char **argv)
+{
+	char *inname = NULL, *outname = NULL, *progname = NULL;
+	datam_darr *instruments = datam_darr_new(sizeof(fract_oscillator));
+	double tempo = 8.0;
+	char lo = 40, hi = 80;
+	int sample_rate = 44100;
+	int c;
+	while((c = getopt(argc, argv, "i:o:p:b:r:l:h:")) != -1){
+		switch(c){
+			case 'i':
+				inname = strdup(optarg); break;
+			case 'o':
+				outname = strdup(optarg); break;
+			case 'b':
+				tempo = strtod(optarg, NULL); break;
+			case 'r':
+				sample_rate = strtol(optarg, NULL, 10); break;
+			case 'p':
+				progname = strdup(optarg); break;
+			case 'l':
+				lo = strtol(optarg, NULL, 10); break;
+			case 'h':
+				hi = strtol(optarg, NULL, 10); break;
+		}
+	}
+	FILE *src = inname ? fopen(inname, "rb") : stdin;
+	if(!src)
+		fprintf(stderr, "Could not open file %s\n", inname);
+	FILE *dst = outname ? fopen(outname, "wb") : stdout;
+	if(!dst)
+		fprintf(stderr, "Could not open file %s\n", outname);
+	if(src && dst){
+		fract_track track;
+		fract_load_track(src, &track);
+		for(size_t i = 0; i < track.num_tracks; i++)
+			track.programs[i] = i;
+		if(progname){
+			FILE *progs = fopen(progname, "r");
+			if(!progs)
+				fprintf(stderr, "Could not open file %s\n", progname);
+			else{
+				fseek(progs, 0, SEEK_END);
+				long end = ftell(progs);
+				fseek(progs, 0, SEEK_SET);
+				while(ftell(progs) < end){
+					fract_oscillator osc = fract_oscillator_from_file(progs);
+					datam_darr_push(instruments, &osc);
+				}
+				fclose(progs);
+			}
+		}
+		while(instruments->n < track.num_tracks){
+			fract_oscillator osc;
+			fract_oscillator_init(&osc);
+			datam_darr_push(instruments, &osc);
+		}
+		size_t len = sample_rate / tempo *
+			track.num_measures * track.notes_per_measure;
+		int32_t *samples = calloc(len, sizeof(int32_t));
+		char scale[] = {lo, 2, 2, 1, 2, 2, 2, 1, 0, hi};
+		fract_signal_from_track(&track, instruments->data, tempo, scale,
+			sample_rate, samples, len);
+		fract_signal_normalize(samples, len, 32767, 1);
+		fract_wavhead head = {sample_rate, 1, 2};
+		fract_write_wav(dst, &head, samples, len);
+		fract_track_destroy(&track);
+		fract_oscillator *oscs = instruments->data;
+		for(size_t i = 0; i < instruments->n; i++)
+			fract_oscillator_destroy(oscs + i);
+		datam_darr_delete(instruments);
+	}
+	if(src && src != stdin)fclose(src);
+	if(dst && dst != stdout)fclose(dst);
+	if(inname)free(inname);
+	if(outname)free(outname);
+	if(progname)free(progname);
 }
 
 int main(int argc, char **argv){
@@ -443,5 +526,7 @@ int main(int argc, char **argv){
 		fract_save_track_record(argc - 1, argv + 1);
 	}else if(!strcmp(argv[1], "midi")){
 		fract_save_midi(argc - 1, argv + 1);
+	}else if(!strcmp(argv[1], "wav")){
+		fract_save_wav(argc - 1, argv + 1);
 	}
 }
