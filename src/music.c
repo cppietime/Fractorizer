@@ -200,7 +200,7 @@ fract_create_midi_track(
 			}
 		}
 	}
-	datam_darr_pushlit(ret, 1);
+	datam_darr_pushlit(ret, track->notes_per_measure & 0x7f);
 	datam_darr_pushlit(ret, 0xff);
 	datam_darr_pushlit(ret, 0x2f);
 	datam_darr_pushlit(ret, 0);

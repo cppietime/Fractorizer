@@ -46,8 +46,10 @@ fract_iir_normalize(fract_iir *iir)
 					float cosarg = -.5 * iir->coefs[i * 3 + 1] / mag
 						/ iir->coefs[i * 3];
 					float arg = acos(cosarg);
-					float norm = hypot(1 + cosarg * mag, sin(arg) * mag);
-					norm *= norm;
+					// float norm = hypot(1 + cosarg * mag, sin(arg) * mag);
+					// norm *= norm;
+					float norm = hypot(cosarg * (1 - mag), sin(arg) * (1 + mag));
+					norm *= 1 - mag;
 					iir->coefs[i * 3] = norm;
 				}else{
 					iir->coefs[i * 3 + 1] /= iir->coefs[i * 3];
@@ -75,12 +77,9 @@ fract_iir_butterworth(
 		iir->buf_len = 3;
 		for(size_t i = 0; i < points; i++){
 			float warped = tan(cutoff[i] / 2) * 2;
-			printf("%f warps -> %f\n", cutoff[i], warped);
 			float sigma = warped * cos(angle);
 			float omega = warped * sin(angle);
-			printf("S poles at %f +- %fi\n", sigma, omega);
 			fract_blt(sigma, omega, &real, &imag);
-			printf("Z poles at %f +- %fi\n", real, imag);
 			if((order & 1) && k == order / 2){
 				iir->coefs[i * 3] = 1;
 				iir->coefs[i * 3 + 1] = -exp(sigma);
@@ -90,12 +89,27 @@ fract_iir_butterworth(
 				iir->coefs[i * 3 + 1] = -2 * real;
 				iir->coefs[i * 3 + 2] = real * real + imag * imag;
 			}
-			if(type == IIR_ZERO)
-				iir->coefs[i * 3 + 1] *= -1;
 		}
 		fract_iir_normalize(iir);
-		printf("Coefs %f %f %f\n", iir->coefs[0], iir->coefs[1], iir->coefs[2]);
 		datam_darr_push(iirs, iir);
+		fract_iir *zero = malloc(sizeof(fract_iir));
+		zero->buffer = malloc(sizeof(float) * 3);
+		zero->coefs = malloc(sizeof(float) * 3);
+		zero->points = 1;
+		zero->stride = 1;
+		zero->buf_len = 3;
+		zero->stride_dev = 0;
+		zero->coefs[0] = 1;
+		zero->type = IIR_ZERO;
+		if((order & 1) && k == order / 2){
+			zero->coefs[1] = -2 * type + 1;
+			zero->coefs[2] = 0;
+		}else{
+			zero->coefs[1] = (2 * type - 1) * -2;
+			zero->coefs[2] = 1;
+		}
+		fract_iir_normalize(zero);
+		datam_darr_push(iirs, zero);
 	}
 }
 
@@ -207,6 +221,7 @@ fract_oscillator_init(fract_oscillator *synth)
 {
 	synth->generator = wavgen_sin;
 	synth->post_proc = NULL;
+	synth->post_arg = 2;
 	synth->filters = datam_darr_new(sizeof(fract_iir));
 	synth->pm_strength = 0;
 	synth->attack = 0;
@@ -251,6 +266,8 @@ fract_oscillator_synth(
 	float gain, size_t samples,
 	float elapsed, char note_ends)
 {
+	float period = 2 * M_PI / omega;
+	float sample_gain = pow(synth->ring_gain, period / sample_rate);
 	float dry[MAX_DRY];
 	float delta = 1.0 / sample_rate;
 	size_t total_duration = samples + synth->release * note_ends * sample_rate;
@@ -281,8 +298,8 @@ fract_oscillator_synth(
 		dry[0] = synth->generator(phase, synth->ring_buf, RINGBUF_SIZE,
 			synth->ring_ptr);
 		size_t dryptr = 0;
-		synth->ring_buf[synth->ring_ptr] = dry[0] * synth->ring_gain;
-		synth->ring_ptr = (synth->ring_ptr + 1) % (int)(2 * M_PI / omega);
+		synth->ring_buf[synth->ring_ptr] = dry[0] * sample_gain;
+		synth->ring_ptr = (synth->ring_ptr + 1) % (int)(period);
 		float wet = dry[0];
 		fract_iir *filters = synth->filters->data;
 		float lfo = sin(synth->filter_phase) * .5 + .5;
@@ -317,7 +334,10 @@ fract_oscillator_synth(
 		else if(index > samples){
 			envelope += release;
 		}
-		int32_t samp = (int32_t)(wet * envelope * 32767);
+		wet *= envelope;
+		if(synth->post_proc != NULL)
+			wet = synth->post_proc(wet, synth->post_arg);
+		int32_t samp = (int32_t)(wet * 32767);
 		target[index] += samp;
 		if(target + index >= limit)
 			break;

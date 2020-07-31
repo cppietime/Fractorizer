@@ -76,3 +76,13 @@ command is one of:
  - -d: percussion voice number, or -1 for no percussion
  - -l: minimum MIDI note
  - -h: maximum MIDI note
+
+### wav
+`cli wav` renders a WAV from a track
+ - -o: output file name(default stdout)
+ - -i: input file name(default stdin)
+ - -p: instruments file name(leave out to use default)
+ - -b: tempo (notes per second)
+ - -r: sample rate
+ - -l: minimum MIDI-style note
+ - -h: maximum MIDI-style note

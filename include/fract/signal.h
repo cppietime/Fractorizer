@@ -32,7 +32,9 @@ float wavgen_ring(float phase, float *buffer, size_t buf_len, size_t buf_ptr);
 /**
  * 1:1 float transformation
  */
-typedef float (*float_func)(float);
+typedef float (*bifloat_func)(float, float);
+
+float distortion_hard(float samp, float arg);
 
 enum {
 	IIR_ZERO = 0,
@@ -41,7 +43,9 @@ enum {
 	IIR_POP = 3,
 	IIR_PUSH = 4,
 	IIR_EXTRACT = 5,
-	IIR_FLATTEN = 6
+	IIR_FLATTEN = 6,
+	BUTTERWORTH_LOPASS = 0,
+	BUTTERWORTH_HIPASS = 1
 };
 
 /**
@@ -146,13 +150,14 @@ fract_iir_apply(fract_iir *iir, float sample, float dry, float lfo);
  */
 typedef struct _fract_oscillator{
 	wavgen_func generator;
-	float_func post_proc;
+	bifloat_func post_proc;
 	datam_darr *filters;
 	float *ring_buf;
 	float ring_gain;
 	size_t ring_ptr;
 	float filter_phase;
 	float filter_arg;
+	float post_arg;
 	float pm_ratio;
 	float pm_strength;
 	float phase;

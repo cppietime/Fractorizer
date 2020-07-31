@@ -221,9 +221,11 @@ fract_save_swirl(int argc, char **argv)
 		}
 	}
 	FILE *file = filename ? fopen(filename, "wb") : stdout;
-	if(file == NULL){
+	if(file == NULL)
 		fprintf(stderr, "Could not open file %s\n", filename);
-	}else{
+	else if(rgb == NULL)
+		fprintf(stderr, "Must declare color size with -l\n");
+	else{
 		fract_perlin perlin;
 		fract_perlin_init(&perlin, &lcg, 256);
 		fract_perlin pal;
