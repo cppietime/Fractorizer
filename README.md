@@ -101,12 +101,14 @@ The instruments (or programs) specified for the `wav` command use the following 
  - triangle
  - white noise
  - ring buffer (string pluck)
-`PM# #`: Set phase modulation to have frequency #0 times the note frequency and magnitude #1
-`BW# # #`: Apply a butterworth filter of order #0 and angular cutoff frequency #1. #2 of 0 indicates lopass, 1 indicates hipass.
-`CP# # #`: Add a conjugate-pair of zeros or poles with angular frequency #0 and magnitude #1, #2 of 0 indicates a zero, 1 indicates a pole.
-`RG#`: Set ring-buffer gain to #
-`ENV# # # #`: Set the ADSR envelope to: attack = #0, decay = #1, sustain = #2, release = #3, times in seconds
-`BRK`: End this instrument's definition and start the next
+ 
+ 
+`PM# #`: Set phase modulation to have frequency #0 times the note frequency and magnitude #1  
+`BW# # #`: Apply a butterworth filter of order #0 and angular cutoff frequency #1. #2 of 0 indicates lopass, 1 indicates hipass.  
+`CP# # #`: Add a conjugate-pair of zeros or poles with angular frequency #0 and magnitude #1, #2 of 0 indicates a zero, 1 indicates a pole.  
+`RG#`: Set ring-buffer gain to #  
+`ENV# # # #`: Set the ADSR envelope to: attack = #0, decay = #1, sustain = #2, release = #3, times in seconds  
+`BRK`: End this instrument's definition and start the next  
 
 As an example, the following commands will generate a songfile named "song.wav":
 
