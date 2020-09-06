@@ -16,6 +16,19 @@
 #include "signal.h"
 #include "wav.h"
 
+/*
+char*
+strdup_cus(char *in)
+{
+	size_t len = strlen(in);
+	char *ret = malloc(len + 1);
+	strcpy(ret, in);
+	return ret;
+}
+*/
+
+#define strdup_cus strdup
+
 Bitmap*
 resize_and_warn(Bitmap *src, char stretch)
 {
@@ -108,7 +121,7 @@ fract_save_noise(int argc, char **argv)
 				flags = calloc(layers, 1);
 				break;
 			case 'o':
-				filename = strdup(optarg);
+				filename = strdup_cus(optarg);
 				break;
 			case 'c':
 				if(colors == NULL)
@@ -182,7 +195,7 @@ fract_save_swirl(int argc, char **argv)
 	while((c = getopt(argc, argv, "o:n:r:w:x:y:s:b:l:c:")) != -1){
 		switch(c){
 			case 'o':
-				filename = strdup(optarg);
+				filename = strdup_cus(optarg);
 				break;
 			case 'n':
 				noise_res = strtod(optarg, NULL);
@@ -308,7 +321,7 @@ fract_save_flame(int argc, char **argv)
 				side = strtol(optarg, NULL, 10);
 				break;
 			case 'o':
-				filename = strdup(optarg);
+				filename = strdup_cus(optarg);
 				break;
 		}
 	}
@@ -351,7 +364,7 @@ fract_save_track_record(int argc, char **argv)
 	while((c = getopt(argc, argv, "o:i:n:m:u:t:g:")) != -1){
 		switch(c){
 			case 'o':
-				outname = strdup(optarg); break;
+				outname = strdup_cus(optarg); break;
 			case 'i':{
 				FILE *file = fopen(optarg, "rb");
 				if(file == NULL){
@@ -402,9 +415,9 @@ fract_save_midi(int argc, char **argv)
 	while((c = getopt(argc, argv, "i:o:d:p:b:h:l:")) != -1){
 		switch(c){
 			case 'i':
-				iname = strdup(optarg); break;
+				iname = strdup_cus(optarg); break;
 			case 'o':
-				oname = strdup(optarg); break;
+				oname = strdup_cus(optarg); break;
 			case 'd':
 				percussion = strtol(optarg, NULL, 10); break;
 			case 'b':
@@ -449,15 +462,15 @@ fract_save_wav(int argc, char **argv)
 	while((c = getopt(argc, argv, "i:o:p:b:r:l:h:")) != -1){
 		switch(c){
 			case 'i':
-				inname = strdup(optarg); break;
+				inname = strdup_cus(optarg); break;
 			case 'o':
-				outname = strdup(optarg); break;
+				outname = strdup_cus(optarg); break;
 			case 'b':
 				tempo = strtod(optarg, NULL); break;
 			case 'r':
 				sample_rate = strtol(optarg, NULL, 10); break;
 			case 'p':
-				progname = strdup(optarg); break;
+				progname = strdup_cus(optarg); break;
 			case 'l':
 				lo = strtol(optarg, NULL, 10); break;
 			case 'h':

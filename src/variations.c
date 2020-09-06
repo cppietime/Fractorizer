@@ -4,6 +4,7 @@
  */
 
 #include <math.h>
+#include <stdlib.h>
 #include "prng.h"
 #include "ifs.h"
 #include "constants.h"
